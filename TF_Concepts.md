@@ -1,5 +1,9 @@
 # Terraform Concepts
 # What is Terraform
+Terraform is a declarative IAC (Infrastructure as code) tool.
+Its a CLI tool and doesn't have GUI
+It supports windows, Mac and Linux
+
 # Pros and Cons of Terraform
 ## Pros
 Repeatability
@@ -21,3 +25,14 @@ Difficult to do changes.
 
 # SDLC in IAC
 ![[SDLC_IAC.png]](Images/SDLC_IAC.png)
+
+# TF Configuration files
+TF config files will be in HCL (Hashicorp configuration language) format
+will have an tf extension i.e example.tf
+
+```tf
+output "Greetings"{
+value = "Hello world"
+}
+Provider "random" {}
+```
