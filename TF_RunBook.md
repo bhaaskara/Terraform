@@ -3,6 +3,64 @@ Goto terraform.io
 download the zip file for required version
 extract and run the terraform.exe (windows) / terraform (Linux)
 
+## Install Using vagrant
+```
+install virtual box
+install vagrant
+clone the repo ...
+vagrant up
+vagrant ssh-config
+```
+# TF with AWS
+## Setup
+```
+1. Open AWS Account
+2. Create IAM admin user
+```
+
+1. Open AWS account
+    sign up on aws.amazon.com
+2. Create IAM admin user
+    Create user and grant only programmatic access.
+    Assign `AdministratorAccess` policy
+    Download ur secret access key
+
+## Spin up an EC2 instance
+```
+1. Create terraform file to spin up t2.micro ins ance
+2. Run terraform apply
+```
+
+ec2_instance.tf
+```tf
+provider "aws" {
+    access_key = "ACCESS_KEY_HERE"
+    secret_key = "SECRET_KEY_HERE"
+    region = "us-east-1"
+}
+
+resource "aws_instance" "example" {  # example is the instance name
+    ami = "ami-0d729a60"  #Get the ami id from aws console
+    instance_type = "t3.micro"
+}
+```
+
+version.tf
+```terraform
+terraform {
+
+required_version = ">= 0.12"
+
+}
+```
+
+Provision the Infra
+```sh
+terraform init # when ever new dir is created, init has to be run
+terraform plan # preview of the changes
+terraform apply # apply the changes
+```
+
 # Launching GKE with Terraform
 ## Pre reqs
 gcloud
