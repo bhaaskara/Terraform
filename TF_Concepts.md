@@ -1,26 +1,28 @@
 # Terraform Intro
 
-# What is IAC?
+## What is IAC?
 Infrastructure as Code (_IaC_) is the managing and provisioning of infrastructure through code instead of through manual processes.
 
-# What is Terraform
+## What is Terraform
+The Terraform language is declarative, describing an intended goal rather than the steps to reach that goal. The ordering of blocks and the files they are organized into are generally not significant; Terraform only considers implicit and explicit relationships between resources when determining an order of operations.
+
 - Terraform is a open source IaC (Infrastructure as code) tool.
 - It uses a high level declarative style language called HashiCorp Configuration Language (HCL) for defining infrastructure in ‘simple for humans to read’ configuration files.
 - Its a CLI tool and doesn't have GUI
 - It supports Windows, Mac and Linux
 
-# Terraform vs Ansible
+## Terraform vs Ansible
 - Ansible, Puppet, Chef and Saltstack have of focus on automating the installation and configuration of the software. Keeping the machine in compliance.
 - Terraform can automate provisioning of the infrastructure itself.
 
-# Pros and Cons of Terraform
+## Pros and Cons of Terraform
 ## Pros
 - Automation of the infrastructure provisioning
 - Repeatability
 - Make your infra auditable.
     Auditability - Tracking changes or reverting changes
 
-# Types of code
+## Types of code
 ## Declarative
 - Will have config files in HCL (Hashicorp config language)
 
@@ -38,14 +40,69 @@ Difficult to do changes.
 **Imperative** model you define exact steps to follow to get an end result.
 **Declarative** model you define what the end result you want and the tool will takes care of implementation.
 
-# SDLC in IAC
+## SDLC in IAC
 ![[SDLC_IAC.png]](Images/SDLC_IAC.png)
 
+# Terraform Terminology
+## Provider
+Terraform relies on plugins called "providers" to interact with cloud providers, SaaS providers, and other APIs.
+
+Terraform configurations must declare which providers they require so that Terraform can install and use them. Additionally, some providers require configuration (like endpoint URLs or cloud regions) before they can be used.
+
+https://registry.terraform.io
+
 # Terraform concepts
-## Life cycle
+## Providers
+Terraform relies on plugins called "providers" to interact with cloud providers, SaaS providers, and other APIs.
+
+Terraform configurations must declare which providers they require so that Terraform can install and use them. Additionally, some providers require configuration (like endpoint URLs or cloud regions) before they can be used.
+
+### What Providers Do
+Each provider adds a set of [resource types](https://www.terraform.io/language/resources) and/or [data sources](https://www.terraform.io/language/data-sources) that Terraform can manage.
+
+Every resource type is implemented by a provider; without providers, Terraform can't manage any kind of infrastructure.
+
+### Where Providers Come From
+Providers are distributed separately from Terraform itself, and each provider has its own release cadence and version numbers.
+
+The [Terraform Registry](https://registry.terraform.io/browse/providers) is the main directory of publicly available Terraform providers, and hosts providers for most major infrastructure platforms.
+
 Terraform template (code) is written in HCL language and stored as a configuration file with a .tf extension. HCL is a declarative language, which means our goal is just to provide the end state of the infrastructure and Terraform will figure out how to create it. Terraform can be used to create and manage infrastructure across all major cloud platforms. These platforms are referred to as ‘providers’ in Terraform jargon, and cover AWS, Google Cloud, Azure, Digital Ocean, Open Stack and many others.
 
+### Provider version
+| Version number | Description |
+| :-- | :-- |
+| >=1.0 | Great than or equal to the version |
+| <=1.0 | Less than or equal to the version |
+| ~>2.0 | any version in the 2.x range |
+| >=2.0,<=2.3 | any version between 2.0 and 2.3 
+
+## Life cycle
 ![](Pasted%20image%2020220607231049.png)
+
+### Init
+The Terraform binary contains the basic functionality and everything else is downloaded as and when required. The ‘terraform init’ step analyses the code, figures out the provider and downloads all the plugins (code) needed by the provider (here, it’s AWS). Provider plugins are responsible for interacting over APIs provided by the cloud platforms using the corresponding CLI tools. They are responsible for the life cycle of the resource, i.e., create, read, update and delete. Figure 3 shows the checking and downloading of the provider ‘aws’ plugins after scanning the configuration file.
+
+![](Pasted%20image%2020220618135155.png)
+
+### Plan
+The ‘terraform plan’ is a dry run for our changes. It builds the topology of all the resources and services needed and, in parallel, handles the creation of dependent and non-dependent resources. It efficiently analyses the previously running state and resources, using a resource graph to calculate the required modifications. It provides the flexibility of validating and scanning infrastructure resources before provisioning, which otherwise would have been risky.
+
+**Refresh** - `Terraform refresh` will update the terraform.tfstate file with the existing cloud (remote) configuration. But Terraform only tracks the resources created by terraform.
+If you need to add any existing resources to terraform, use `terraform import`.
+
+changes in resources, with ‘+’ indicating addition and ‘-’ indicating deletion.
+
+![](Pasted%20image%2020220618135403.png)
+
+### Validate
+Administrators can validate and approve significant changes produced in ‘terraform planning’s’ dry run.
+
+### Apply
+The ‘terraform apply’ executes the exact same provisioning plan defined in the last step, after being reviewed. Terraform transforms configuration files (.tf) based on appropriate API calls to cloud provider(s) automating resource creation (using the provider’s CLI) seamlessly.
+
+### Destroy
+After resources are created, there may be a need to terminate them. As Terraform tracks all the resources, terminating them is also simple. All that is needed is to run ‘terraform destroy’. Again, Terraform will evaluate the changes and execute them after you give permission.
 
 
 ## Terraform init
@@ -151,7 +208,13 @@ variable "mylist"{
     type= list
     default= [1,2,3]
 }
+
+# List of strings
+
+variable "string_list" {"string1","string2"."string3" }
+
 ```
+
 
 Access map
 ```tf
@@ -161,7 +224,7 @@ Access map
 > "${var.mylist[0]}" #Introduced in v0.12
 ```
 
-## vars.tf vs terraform.tfvars
+### vars.tf vs terraform.tfvars
 `vars.tf` file is used to define a variable for your terraform configuration.
 If you run `terraform plan or apply` with a variable defined but no default. Terraform will prompt you for the value.
 
@@ -179,17 +242,84 @@ Or there are three ways to set or override defaults, or in the absence of a defa
 `terraform.tfvars` is a default file name, if this is present in your root directory then terraform will load this file and apply the values. You can also specify a custom file name  
 using the command line flag `terraform apply -var-file=./nics.tfvars`
 
+### Variable assignment
+1. Environment variables - `export TF_VAR_<var_name>=<value>` # in Linux
+2. From file: `terraform.tfvars`
+    ```
+    <varname> = <value>
+    ```
+**Note:** `terraform.tfvars` is the default file name, if you want to use a different name, you need to parse it.
+`terraform plan -var-file="<file.tfvars>"`
 
+3. Command line arguments
+`terraform plan -var="<var_name>=<value>" -var="<var_name2>=<value2>"`
+
+4. Default values: `vars.tf`
+```
+    #This file defines the variables and assigns a default value
+    variable "<var_name>" {
+        default = "value"
+        #type = string #in TF 0.13 and later type is not required
+    }
+```
+
+Precedence...
+
+## Output
+```
+Provider "random" {}
+
+output "Greetings"{
+value = "Hello world"
+}
+```
+
+```sh
+# Output a variable value
+output "source_dest_ckech" {
+    value = aws_instance.web.source_dest_check
+
+}
+```
 
 ## Functions
 ### Element
 ```tf
 > terraform console
-> element(var.mylise, 1)
-
-
+> element(var.mylist, 1)
 ```
 ### Slice
+`slice(var.mylist, 0,2)`
+
+### Length
+`length(var.string_list)`
+
 ```
-slice(var.mylist, 0,2)
+count = ${length(var.string_list)}
+```
+
+### Join
+### Depends on
+`depends_on = ["azurerm_resource_group.main"]`
+
+## IF / Conditional statement
+`vmsize = ${var.environmet == "production" ? var.machine_type_prod : var.machine_type_dev }`
+
+
+# AWS Resources
+## AWS Instance ID
+```sh
+resource "aws_instance" "web" {
+    ami = "<ami_id>"
+    instance_type = "t2.micro"
+}
+
+
+resource "aws_ami_from_instance" "testami" {
+    name = "TFtraining"
+    source_instance_id = "aws_instance.web.id" 
+} 
+
+
+
 ```
