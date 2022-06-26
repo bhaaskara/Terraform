@@ -215,8 +215,7 @@ variable "string_list" {"string1","string2"."string3" }
 
 ```
 
-
-Access map
+Access list
 ```tf
 > terraform console
 > var.mylist
@@ -282,12 +281,70 @@ output "source_dest_ckech" {
 }
 ```
 
+To export a value or to reference a value remotely or on a different resource tf file, then first output the value in output block of a tf file, and refer to it in data block in another tf file.
+## Count
+```sh
+resorce "aws_instance" "testvm" {
+    ami = "ami_id"
+    instance_type = "t2.micro"
+    count = 5
+    tags {
+        name = "vm.${count.index}"
+    }
+}
+```
+
+## Data
+Data block is useful in fetching data from different resources (tfstate file) or remotely from S3 buckets or dynamically from cloud provider. (i.e AWS or Azure)
+
+
+
+### Referencing values from dirrent resources tfstate file
+![](Pasted%20image%2020220624203804.png)
+Here lambda functions ARN (should be in output block)is refenced by cloudwatch(data block). 
+
+
+## Locals
+```sh
+locals {
+    common_tags= {
+        company = "mycomp"
+        project = "tfpoc"
+    }
+}
+
+resource "aws_instance" "myvm1" {
+    ami = "ami-id"
+    instance_type = "t2.micro"
+    tags = local.common_tags
+}
+
+resource "aws_instance" "myvm2" {
+    ami = "ami-id"
+    instance_type = "t2.small"
+    tags = local.common_tags
+}
+
+```
+
+
 ## Functions
+**Note:** user defined functions are not allowed in Terraform.
+
 ### Element
 ```tf
 > terraform console
 > element(var.mylist, 1)
 ```
+
+### Lookup
+```
+lookup(map, key, default)
+
+> lookup({a="ay", b="bee"}, "a", "what?")
+> ay
+```
+
 ### Slice
 `slice(var.mylist, 0,2)`
 
@@ -305,7 +362,138 @@ count = ${length(var.string_list)}
 ## IF / Conditional statement
 `vmsize = ${var.environmet == "production" ? var.machine_type_prod : var.machine_type_dev }`
 
+`count = var.project == "Atos" ? 3 : 1`
 
+## Data source
+
+## Formatting
+`terraform fmt`
+
+## Validate the configuration file
+`terraform validate`
+
+## Load order and semantics
+
+## Dynamic blocks
+
+vars.tf
+```sh
+variable "port" {
+    type = list
+    default = ["22","8443","3389","443"]
+}
+
+variable "eport" {
+    type = list
+    default = {"22","23","9443"}
+}
+```
+dynamicsg.tf
+```sh
+resource "aws_security_group" "dynamicsg" {
+    name = "DynamicSG"
+    description = "Allow TLS inbound traffic"
+
+    dynamic "ingress" {
+        for_each = var.port
+        content {
+            from_port   = ingress.value 
+            to_port     = ingress.value
+            protocol    = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]  
+        }
+    }
+    dynamic "egress" {
+        for_each = var.eport
+        content {
+            
+        }
+    }
+}
+```
+
+**Iterator**
+```sh
+resource "aws_security_group" "dynamicsg" {
+    name = "DynamicSG"
+    description = "Allow TLS inbound traffic"
+
+    dynamic "ingress" {
+        for_each = var.port
+        iterator =iport
+        content {
+            from_port   = iport.value 
+            to_port     = iport.value
+            protocol    = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]  
+        }
+    }
+    dynamic "egress" {
+        for_each = var.eport
+        content {
+            
+        }
+    }
+}
+```
+
+## Debugging
+`export TF_LOG=TRACE` # TF_LOG to TRACE, DEBUG, INFO, WARN, or ERROR
+`export TF_LOG_PATH=trace.txt`
+
+## Taint a resource
+`terraform taint aws_insatnce.demoec2`
+
+Tainited resource will be recreated next time when you run `terraform apply`
+
+- list tainted resources ?
+- how to untaint a resource ?
+
+## Splat expression
+A _splat expression_ provides a more concise way to express a common operation that could otherwise be performed with a `for` expression.
+
+If `var.list` is a list of objects that all have an attribute `id`, then a list of the ids could be produced with the following `for` expression:
+
+```hcl
+[for o in var.list : o.id]
+```
+This is equivalent to the following _splat expression:_
+
+```hcl
+var.list[*].id
+```
+The special `[*]` symbol iterates over all of the elements of the list given to its left and accesses from each one the attribute name given on its right.
+
+```hcl
+resource "aws_instance" "demoec2" {
+    ami = "amiid"
+    instance_type = "t2.micro"
+    count = var.project == "Atos" ? 5 : 1
+    tags  = {
+        name = "demoec2"
+    }
+
+output "type" {
+    value = aws.instance.demoec2[*].instance_type
+
+}
+}
+```
+
+## Save terraform plan to a file
+`terraform plan -out=testplan`
+`terraform apply testplan`
+**Note:** plan output file testplan is not human readable.
+
+- how to preview a terraform plan file ?
+
+## Terraform graph
+```
+1. Generate a dot file using `terraform graph > graphout.dot`
+2. use graphviz utility to convert the dot file into graph
+3. cat graphout.dot | dot -Tsvg > graph.svg
+4. open the graph file with browser
+```
 # AWS Resources
 ## AWS Instance ID
 ```sh
@@ -314,12 +502,9 @@ resource "aws_instance" "web" {
     instance_type = "t2.micro"
 }
 
-
 resource "aws_ami_from_instance" "testami" {
     name = "TFtraining"
     source_instance_id = "aws_instance.web.id" 
 } 
-
-
-
 ```
+

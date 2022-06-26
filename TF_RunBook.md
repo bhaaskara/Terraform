@@ -132,7 +132,7 @@ version.tf
 ```tf
 terraform {
 
-required_version = ">= 0.12"
+    required_version = ">= 0.12"
 
 }
 ```
@@ -224,3 +224,6 @@ provider "aws" {
     region = "us-east-1"
 }
 ```
+
+## Exercises
+1. create an ec2 resource and attach 5 EBS volumes to it using dynamic block. 
