@@ -282,6 +282,9 @@ output "source_dest_ckech" {
 ```
 
 To export a value or to reference a value remotely or on a different resource tf file, then first output the value in output block of a tf file, and refer to it in data block in another tf file.
+
+`terraform output` command will shows the output block values.
+
 ## Count
 ```sh
 resorce "aws_instance" "testvm" {
@@ -358,6 +361,30 @@ count = ${length(var.string_list)}
 ### Join
 ### Depends on
 `depends_on = ["azurerm_resource_group.main"]`
+
+### zipmap
+```hcl
+resource "aws_iam_user" "username" {
+    count = 4
+    name = "iamuser.${count.index}"
+}
+
+output "userARN" {
+    value = "aws_iam_user.username[*].arn"
+}
+
+output "userName" {
+    value = "aws_iam_user.username[*].name"
+}
+
+## Here the output blocks will not have relation between arn and name
+## Zipmap would give combined/mapped output
+
+output "combined" {
+    value = zipmap(aws_iam_user.username[*].name,aws_iam_user.username[*].arn)
+
+}
+```
 
 ## IF / Conditional statement
 `vmsize = ${var.environmet == "production" ? var.machine_type_prod : var.machine_type_dev }`
@@ -494,6 +521,21 @@ output "type" {
 3. cat graphout.dot | dot -Tsvg > graph.svg
 4. open the graph file with browser
 ```
+
+## Terraform version and Provider version
+```sh
+terraform {
+    required_version = "< 0.12"
+    required_providers {
+        aws = "~> 2.0"
+    }
+}
+```
+this can be mentioned in provider.tf or version.tf
+`terraform state replace provider`
+## tfswitch
+
+
 # AWS Resources
 ## AWS Instance ID
 ```sh
