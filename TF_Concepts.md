@@ -51,6 +51,7 @@ Terraform configurations must declare which providers they require so that Terra
 
 https://registry.terraform.io
 
+- defining multiple providers in provider.tf
 # Terraform concepts
 ## Providers
 Terraform relies on plugins called "providers" to interact with cloud providers, SaaS providers, and other APIs.
@@ -77,6 +78,38 @@ Terraform template (code) is written in HCL language and stored as a configurati
 | ~>2.0 | any version in the 2.x range |
 | >=2.0,<=2.3 | any version between 2.0 and 2.3 
 
+### Multiple providers
+provider.tf
+```sh
+provider "aws" {
+    region = "us-east-1"
+    access_key = "acess key"
+    secret_key = "secret key"
+    version = "~>2.0"
+}
+
+provider "aws" {
+    region = "us-west-1"
+    access_key = "acess key"
+    secret_key = "secret key"
+    version = "~>2.0"
+    alias = "test2"
+}
+
+```
+resource.tf
+```sh
+resource "aws_instance" "web" {
+    ami = "ami-id"
+    instance_type = t2.micro
+    
+    provider = aws.test2
+}
+```
+
+**Note:** alias is required only when more than one provider is defined.
+          alias is not required for default provider
+          
 ## Life cycle
 ![](Pasted%20image%2020220607231049.png)
 
@@ -386,6 +419,8 @@ output "combined" {
 }
 ```
 
+### file
+
 ## IF / Conditional statement
 `vmsize = ${var.environmet == "production" ? var.machine_type_prod : var.machine_type_dev }`
 
@@ -500,10 +535,9 @@ resource "aws_instance" "demoec2" {
         name = "demoec2"
     }
 
-output "type" {
+    output "type" {
     value = aws.instance.demoec2[*].instance_type
-
-}
+    }
 }
 ```
 
@@ -533,8 +567,90 @@ terraform {
 ```
 this can be mentioned in provider.tf or version.tf
 `terraform state replace provider`
+
 ## tfswitch
 
+## Dealing with large infrastructure
+`terraform plan -refresh=false`  # To avoid API limits exhaust
+`terraform plan -target=aws_instance.myec2`
+
+## Provisioners
+### Local provisioners
+```sh
+resource "aws_instance" "ec2test" {
+    ami = "ami-id"
+    instance_type = "t2.micro"
+    tags = {
+        name = "Testproject"
+    }
+    provisioner "local-exec" {
+        command = "echo ${self.private_ip} >> pribate_ips.txt"
+        on_failure = continue
+    }
+}
+```
+local provisioner runs only when the resource is created, and it wont run when resource is modified.
+local resource runs on the machine where TF is installed or run from.
+provisioner creation time failure cause the resource to be tainted and recreated during next time `terraform apply`.
+
+### Remote provisioners
+```sh
+resource "aws_instance" "ec2test" {
+    ami = "ami-id"
+    instance_type = "t2.micro"
+    tags = {
+        name = "Testproject"
+    }
+    provisioner "remote-exec" {
+        inline = [
+            "puppet apply",
+            "consul join${aws_instance.ec2test.private_ip}",
+        ]
+        connection {
+            type = "ssh"
+            host = "${var.host}"
+            user = "ec2-user"
+            passowrd = "${var.root_password}"
+        }
+}
+```
+- it runs on remote machine
+- it works with ssh and winRM
+
+### Destroy-time provisioner
+```sh
+resource "aws_instance" "ec2test" {
+    ami = "ami-id"
+    instance_type = "t2.micro"
+    tags = {
+        name = "Testproject"
+    }
+    provisioner "local-exec" {
+        command = "echo ${self.private_ip} >> pribate_ips.txt"
+        on_failure = continue
+        when = destroy
+    }
+}
+```
+
+- how to run a provisioner every time ?
+
+## Modules
+**DRY principle - Do not repeat yourself**
+
+Get the community built modules from registry.terrafor.io
+
+## Workspaces
+```
+terraform workspace list
+terraform workspace new <name>
+terraform workspace select <name>
+terraform workspace delete
+terraform workspace show - shows current work space
+```
+
+### .gitignore
+https://github.com/github/gitignore/blob/main/Terraform.gitignore
 
 # AWS Resources
 ## AWS Instance ID

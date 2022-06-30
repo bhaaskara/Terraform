@@ -15,6 +15,7 @@
 |  | `terraform apply -auto-approve` |
 | | `terraform destroy` |
 | Format corections / auto format | `terraform fmt` |
+| Validate the code | `terraform validate`
 | List of resources in tfstate file | `terraform state list`
 | show a resource details | `terraform state show`
 
