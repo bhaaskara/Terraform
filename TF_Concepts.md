@@ -103,13 +103,44 @@ resource "aws_instance" "web" {
     ami = "ami-id"
     instance_type = t2.micro
     
-    provider = aws.test2
+    provider = aws.test2 # when provider is not mentioned it takes default
 }
 ```
 
 **Note:** alias is required only when more than one provider is defined.
           alias is not required for default provider
-          
+
+### Multiple AWS accounts
+...
+- Update the multiple accounts on aws cli using - `aws configure`
+- Mention the profile in provider block
+```sh
+provider "aws" {
+    region = "us-east-1"
+    access_key = "acess key"
+    secret_key = "secret key"
+    version = "~>2.0"
+}
+
+provider "aws" {
+    region = "us-west-1"
+    #access_key = "acess key"
+    #secret_key = "secret key"
+    profile = "user2"
+    version = "~>2.0"
+    alias = "test2"
+}
+```
+
+```sh
+resource "aws_instance" "web" {
+    ami = "ami-id"
+    instance_type = t2.micro
+    
+    provider = aws.test2 # when provider is not mentioned it takes default
+}
+```
+
 ## Life cycle
 ![](Pasted%20image%2020220607231049.png)
 
@@ -640,6 +671,18 @@ resource "aws_instance" "ec2test" {
 
 Get the community built modules from registry.terrafor.io
 
+### Module source from Git
+```sh
+module "module_local_name" {
+    source = "git::<github SSH/HTTPS path>"
+}
+```
+Reference a branch or tag
+```sh
+module "module_local_name" {
+    source = "git::<github SSH/HTTPS path>?ref=<v0.0.11>/<branchname>"
+}
+```
 ## Workspaces
 ```
 terraform workspace list
@@ -651,6 +694,27 @@ terraform workspace show - shows current work space
 
 ### .gitignore
 https://github.com/github/gitignore/blob/main/Terraform.gitignore
+
+## Null Resource
+...
+
+## TF Remote state management
+```
+1. Create a bucket on S3 and provide nessesary permissions
+2. Define the backend in terraform block
+3. Do a terraform init
+```
+
+```
+terraform {
+    backend "s3" {
+        bucket = "my-state" #Bucket name on AWS
+        key    = "prod/terraform.state" #it creates the dir prod, if not exists
+        region = "us-east-1"    
+    }
+}
+```
+
 
 # AWS Resources
 ## AWS Instance ID
