@@ -15,6 +15,8 @@ If you download Terraform for the Windows operating system:
 4.  Open an administrator command window at `C:\Terraform` and run the command **Terraform** to verify the installation. You should view the terraform help output.
 
 ### Setup TF extension on VS code
+![](Pasted%20image%2020220728225514.png)
+OR
 ![](Pasted%20image%2020220611150526.png)
 
 
@@ -85,11 +87,280 @@ export ARM_TENANT_ID=your_tenant_id
 export ARM_ENVIRONMENT=public
 ```
 
+## Azure CLI
+`az login`
+```shell
+$ az account list
+
+[
+  {
+    "cloudName": "AzureCloud",
+    "id": "00000000-0000-0000-0000-000000000000", #Subscription ID
+    "isDefault": true,
+    "name": "PAYG Subscription",
+    "state": "Enabled",
+    "tenantId": "00000000-0000-0000-0000-000000000000",
+    "user": {
+      "name": "user@example.com",
+      "type": "user"
+    }
+  }
+]
+
+
+```
+
+
 ## Provider setup
 ```sh
 # Terraform version 0.13 or later
+# We strongly recommend using the required_providers block to set the
+# Azure Provider source and version being used
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.0.0"
+    }
+  }
+}
 
+# Configure the Microsoft Azure Provider
+provider "azurerm" {
+    features {}
+}
+```
 
+To use specific subscription
+```sh
+# Configure the Microsoft Azure Provider
+provider "azurerm" {
+    features {}
+    subscription_id = "00000000-0000-0000-0000-000000000000" #In case of multiple subscriptions
+}
+```
+
+## Storage account setup
+stoarge.tf
+```sh
+variable "storage_account_name" {
+    default="appstore50001"
+}
+ 
+variable "resource_group_name" {
+    default="terraform_grp"
+}
+ 
+provider "azurerm"{
+version = "=2.0"
+subscription_id = "20c6eec9-2d80-4700-b0f6-4fde579a8783"
+tenant_id       = "5f5f1c90-abac-4ebe-88d7-0f3d121f967e"
+features {}
+}
+ 
+resource "azurerm_resource_group" "grp" {
+  name     = var.resource_group_name
+  location = "North Europe"
+}
+ 
+resource "azurerm_storage_account" "store" {
+  name                     = var.storage_account_name
+  resource_group_name      = azurerm_resource_group.grp.name
+  location                 = azurerm_resource_group.grp.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+```
+
+```
+terraform init #Initialise the backend
+terraform plan -out storage.tfplan # Do a dry run
+terraform apply "storage.tfplan" 
+```
+
+Note: Generating a random id to create a unique Storage account name.
+```sh
+resource "random_id" "storage_account" {
+  byte_length = 8
+}
+
+resource "azurerm_storage_account" "testsa" {
+  name                = "tfsta${lower(random_id.storage_account.hex)}"
+  resource_group_name = azurerm_resource_group.testrg.name
+
+  location     = "westus"
+  account_type = "Standard_GRS"
+
+  tags {
+    environment = "staging"
+  }
+}
+```
+
+## Azure VM
+vm.tf
+```sh
+variable "storage_account_name" {
+    default="appstore50001" 
+}
+ 
+variable "network_name" {
+    default="staging"
+}
+ 
+variable "vm_name" {
+    default="stagingvm"
+}
+ 
+provider "azurerm"{
+version = "=2.0"
+subscription_id = "20c6eec9-2d80-4700-b0f6-4fde579a8783"
+tenant_id       = "5f5f1c90-abac-4ebe-88d7-0f3d121f967e"
+features {}
+}
+ 
+resource "azurerm_virtual_network" "staging" {
+  name                = var.network_name
+  address_space       = ["10.0.0.0/16"]
+  location            = "North Europe"
+  resource_group_name = "terraform_grp"
+}
+ 
+resource "azurerm_subnet" "default" {
+  name                 = "default"
+  resource_group_name  = "terraform_grp"
+  virtual_network_name = azurerm_virtual_network.staging.name
+  address_prefix     = "10.0.0.0/24"
+}
+ 
+resource "azurerm_network_interface" "interface" {
+  name                = "default-interface"
+  location            = "North Europe"
+  resource_group_name = "terraform_grp"
+ 
+  ip_configuration {
+    name                          = "interfaceconfiguration"
+    subnet_id                     = azurerm_subnet.default.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+ 
+resource "azurerm_virtual_machine" "vm" {
+  name                  = var.vm_name
+  location              = "North Europe"
+  resource_group_name   = "terraform_grp"
+  network_interface_ids = [azurerm_network_interface.interface.id]
+  vm_size               = "Standard_DS1_v2"
+ 
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+  storage_os_disk {
+    name              = "osdisk1"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+  os_profile {
+    computer_name  = "stagingvm"
+    admin_username = "demousr"
+    admin_password = "AzurePortal@123"
+  }
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }  
+}
+```
+
+## Azure key vault
+machine.tf
+```sh
+variable "storage_account_name" {
+    default="appstore50001"
+}
+ 
+variable "network_name" {
+    default="staging"
+}
+ 
+variable "vm_name" {
+    default="stagingvm"
+}
+ 
+provider "azurerm"{
+version = "=2.0"
+subscription_id = "20c6eec9-2d80-4700-b0f6-4fde579a8783"
+tenant_id       = "5f5f1c90-abac-4ebe-88d7-0f3d121f967e"
+features {}
+}
+ 
+data "azurerm_key_vault" "keyvault" {
+  name                = "appvault10001"
+  resource_group_name = "newgrp1"
+}
+ 
+data "azurerm_key_vault_secret" "vmsecret" {
+  name         = "vmpassword"
+  key_vault_id = data.azurerm_key_vault.keyvault.id
+}
+ 
+resource "azurerm_virtual_network" "staging" {
+  name                = var.network_name
+  address_space       = ["10.0.0.0/16"]
+  location            = "North Europe"
+  resource_group_name = "terraform_grp"
+}
+ 
+resource "azurerm_subnet" "default" {
+  name                 = "default"
+  resource_group_name  = "terraform_grp"
+  virtual_network_name = azurerm_virtual_network.staging.name
+  address_prefix     = "10.0.0.0/24"
+}
+ 
+resource "azurerm_network_interface" "interface" {
+  name                = "default-interface"
+  location            = "North Europe"
+  resource_group_name = "terraform_grp"
+ 
+  ip_configuration {
+    name                          = "interfaceconfiguration"
+    subnet_id                     = azurerm_subnet.default.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+ 
+resource "azurerm_virtual_machine" "vm" {
+  name                  = var.vm_name
+  location              = "North Europe"
+  resource_group_name   = "terraform_grp"
+  network_interface_ids = [azurerm_network_interface.interface.id]
+  vm_size               = "Standard_DS1_v2"
+ 
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+  storage_os_disk {
+    name              = "osdisk1"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+  os_profile {
+    computer_name  = "stagingvm"
+    admin_username = "demousr"
+    admin_password = data.azurerm_key_vault_secret.vmsecret.value
+  }
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }  
+}
 ```
 
 # TF with AWS

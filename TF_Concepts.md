@@ -4,12 +4,12 @@
 Infrastructure as Code (_IaC_) is the managing and provisioning of infrastructure through code instead of through manual processes.
 
 ## What is Terraform
-The Terraform language is declarative, describing an intended goal rather than the steps to reach that goal. The ordering of blocks and the files they are organized into are generally not significant; Terraform only considers implicit and explicit relationships between resources when determining an order of operations.
-
 - Terraform is a open source IaC (Infrastructure as code) tool.
 - It uses a high level declarative style language called HashiCorp Configuration Language (HCL) for defining infrastructure in ‘simple for humans to read’ configuration files.
 - Its a CLI tool and doesn't have GUI
 - It supports Windows, Mac and Linux
+
+The Terraform language is declarative, describing an intended goal rather than the steps to reach that goal. The ordering of blocks and the files they are organized into are generally not significant; Terraform only considers implicit and explicit relationships between resources when determining an order of operations.
 
 ## Terraform vs Ansible
 - Ansible, Puppet, Chef and Saltstack have of focus on automating the installation and configuration of the software. Keeping the machine in compliance.
@@ -23,17 +23,16 @@ The Terraform language is declarative, describing an intended goal rather than t
     Auditability - Tracking changes or reverting changes
 
 ## Types of code
-## Declarative
+### Declarative
 - Will have config files in HCL (Hashicorp config language)
 
 Ex: AWS cloud formation
 
-## Imperative
+### Imperative
 - Its a procedural approach
 - We will have script
 
 examples are AWS CLI or Python boto
-
 Difficult to do changes.
 
 ## Imperative vs Declarative
@@ -51,7 +50,6 @@ Terraform configurations must declare which providers they require so that Terra
 
 https://registry.terraform.io
 
-- defining multiple providers in provider.tf
 # Terraform concepts
 ## Providers
 Terraform relies on plugins called "providers" to interact with cloud providers, SaaS providers, and other APIs.
@@ -60,7 +58,6 @@ Terraform configurations must declare which providers they require so that Terra
 
 ### What Providers Do
 Each provider adds a set of [resource types](https://www.terraform.io/language/resources) and/or [data sources](https://www.terraform.io/language/data-sources) that Terraform can manage.
-
 Every resource type is implemented by a provider; without providers, Terraform can't manage any kind of infrastructure.
 
 ### Where Providers Come From
@@ -145,7 +142,7 @@ resource "aws_instance" "web" {
 ![](Pasted%20image%2020220607231049.png)
 
 ### Init
-The Terraform binary contains the basic functionality and everything else is downloaded as and when required. The ‘terraform init’ step analyses the code, figures out the provider and downloads all the plugins (code) needed by the provider (here, it’s AWS). Provider plugins are responsible for interacting over APIs provided by the cloud platforms using the corresponding CLI tools. They are responsible for the life cycle of the resource, i.e., create, read, update and delete. Figure 3 shows the checking and downloading of the provider ‘aws’ plugins after scanning the configuration file.
+The Terraform binary contains the basic functionality and everything else is downloaded as and when required. The ‘terraform init’ step analyses the code, figures out the provider and downloads all the plugins (code) needed by the provider (here, it’s AWS). Provider plugins are responsible for interacting over APIs provided by the cloud platforms using the corresponding CLI tools. They are responsible for the life cycle of the resource, i.e., create, read, update and delete. Figure below shows the checking and downloading of the provider ‘aws’ plugins after scanning the configuration file.
 
 ![](Pasted%20image%2020220618135155.png)
 
@@ -191,10 +188,11 @@ will have an tf extension i.e example.tf
 helloworld.tf
 ```tf
 output "Greetings"{
-value = "Hello world"
+    value = "Hello world"
 }
 Provider "random" {}
 ```
+
 ```
 > terraform init
 > terraform plan
@@ -297,8 +295,7 @@ variable "my_var" { default = "foo" }
 ```
 
 Or there are three ways to set or override defaults, or in the absence of a default, set the value. These are:
-
--   `terraform.tfvars` files
+-   `terraform.tfvars` files or `.auto.tfvars`
 -   Environment variables prefixed with `TF_VAR`, e.g `TF_VAR_my_var=bar`
 -   Flags passed to the `terraform` command `terraform apply -var 'my_var=bar'`
 
@@ -427,7 +424,7 @@ count = ${length(var.string_list)}
 `depends_on = ["azurerm_resource_group.main"]`
 
 ### zipmap
-```hcl
+```sh
 resource "aws_iam_user" "username" {
     count = 4
     name = "iamuser.${count.index}"
@@ -531,13 +528,12 @@ resource "aws_security_group" "dynamicsg" {
 ```
 
 ## Debugging
-`export TF_LOG=TRACE` # TF_LOG to TRACE, DEBUG, INFO, WARN, or ERROR
+`export TF_LOG=TRACE` # TF_LOG can be TRACE, DEBUG, INFO, WARN, or ERROR
 `export TF_LOG_PATH=trace.txt`
 
 ## Taint a resource
 `terraform taint aws_insatnce.demoec2`
-
-Tainited resource will be recreated next time when you run `terraform apply`
+Tainted resource will be recreated next time when you run `terraform apply`
 
 - list tainted resources ?
 - how to untaint a resource ?
@@ -567,7 +563,7 @@ resource "aws_instance" "demoec2" {
     }
 
     output "type" {
-    value = aws.instance.demoec2[*].instance_type
+        value = aws.instance.demoec2[*].instance_type
     }
 }
 ```
@@ -581,7 +577,7 @@ resource "aws_instance" "demoec2" {
 
 ## Terraform graph
 ```
-1. Generate a dot file using `terraform graph > graphout.dot`
+1. Generate a dot file using terraform graph > graphout.dot
 2. use graphviz utility to convert the dot file into graph
 3. cat graphout.dot | dot -Tsvg > graph.svg
 4. open the graph file with browser
@@ -696,9 +692,16 @@ terraform workspace show - shows current work space
 https://github.com/github/gitignore/blob/main/Terraform.gitignore
 
 ## Null Resource
+![](Pasted%20image%2020220728132023.png)
+
 ...
 
-## TF Remote state management
+# TF Remote state management using Backend
+- With remote state management the statefile will be saved on the backend
+- Local tfstate file will not be created/saved locally. 
+## Azure
+![](Pasted%20image%2020220728120358.png)
+## AWS
 ```
 1. Create a bucket on S3 and provide nessesary permissions
 2. Define the backend in terraform block
@@ -716,17 +719,4 @@ terraform {
 ```
 
 
-# AWS Resources
-## AWS Instance ID
-```sh
-resource "aws_instance" "web" {
-    ami = "<ami_id>"
-    instance_type = "t2.micro"
-}
-
-resource "aws_ami_from_instance" "testami" {
-    name = "TFtraining"
-    source_instance_id = "aws_instance.web.id" 
-} 
-```
-
+# Workspaces

@@ -18,6 +18,7 @@
 | Validate the code | `terraform validate`
 | List of resources in tfstate file | `terraform state list`
 | show a resource details | `terraform state show`
+| List/Show the entire terraform statefile | `terraform show`
 
 
 # Get Iterative names like, vm-1,vm-2
