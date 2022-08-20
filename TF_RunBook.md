@@ -141,7 +141,7 @@ provider "azurerm" {
 ```
 
 ## Storage account setup
-stoarge.tf
+storage.tf
 ```sh
 variable "storage_account_name" {
     default="appstore50001"
