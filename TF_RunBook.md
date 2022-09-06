@@ -19,6 +19,7 @@ If you download Terraform for the Windows operating system:
 OR
 ![](Pasted%20image%2020220611150526.png)
 
+- Use `ctrl+space` for code suggestions.
 
 ## Linux
 1.  Download Terraform using the following command:
@@ -110,13 +111,14 @@ $ az account list
 
 ```
 
-
-## Provider setup
-```sh
+## TF Settings/Provider setup
+main.tf
+``` sh
 # Terraform version 0.13 or later
 # We strongly recommend using the required_providers block to set the
 # Azure Provider source and version being used
 terraform {
+  required_version = ">= 1.1.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -498,3 +500,18 @@ provider "aws" {
 
 ## Exercises
 1. create an ec2 resource and attach 5 EBS volumes to it using dynamic block. 
+
+# Create AKS with TF and Azure DevOps
+https://github.com/bhaaskara/azure-aks-kubernetes-masterclass/tree/master/25-Azure-DevOps-Terraform-Azure-AKS
+
+-   Create Azure DevOps Pipeline to create AKS cluster using Terraform
+-   We are going to create two environments Dev and QA using single pipeline.
+
+## Step-01: Install Azure Market Place Plugins in Azure DevOps
+
+-   Install below listed two plugins in your respective Azure DevOps Organization
+-   Discuss about which plugin to use
+-   We are going to use plugin-2 as on today it is very actively managed and good reviews and good features
+-   [Plugin-1: Terraform by Microsoft Devlabs](https://marketplace.visualstudio.com/items?itemName=ms-devlabs.custom-terraform-tasks)
+-   [Plugin-2: Terraform Build & Release Tasks](https://marketplace.visualstudio.com/items?itemName=charleszipp.azure-pipelines-tasks-terraform)
+

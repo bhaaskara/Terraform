@@ -48,13 +48,15 @@ Terraform relies on plugins called "providers" to interact with cloud providers,
 
 Terraform configurations must declare which providers they require so that Terraform can install and use them. Additionally, some providers require configuration (like endpoint URLs or cloud regions) before they can be used.
 
-https://registry.terraform.io
+
 
 # Terraform concepts
 ## Providers
 Terraform relies on plugins called "providers" to interact with cloud providers, SaaS providers, and other APIs.
 
 Terraform configurations must declare which providers they require so that Terraform can install and use them. Additionally, some providers require configuration (like endpoint URLs or cloud regions) before they can be used.
+
+https://registry.terraform.io
 
 ### What Providers Do
 Each provider adds a set of [resource types](https://www.terraform.io/language/resources) and/or [data sources](https://www.terraform.io/language/data-sources) that Terraform can manage.
@@ -74,6 +76,8 @@ Terraform template (code) is written in HCL language and stored as a configurati
 | <=1.0 | Less than or equal to the version |
 | ~>2.0 | any version in the 2.x range |
 | >=2.0,<=2.3 | any version between 2.0 and 2.3 
+
+### Define Terraform Providers
 
 ### Multiple providers
 provider.tf
@@ -138,11 +142,67 @@ resource "aws_instance" "web" {
 }
 ```
 
+### Terraform Settings Block
+-   We primarily define the below 3 items in Terraform Settings Block
+    -   Terraform Version
+    -   Terraform Providers
+        -   [Azure RM Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest)
+        -   [Azure AD Provider](https://registry.terraform.io/providers/hashicorp/azuread/latest)
+        -   [Random Provider](https://registry.terraform.io/providers/hashicorp/random/latest)
+        -   Append with **/docs** for above 3 links to get their equivalent documentation
+    -   Terraform State Storage Backend
+-   Create a file **01-main.tf** and create terraform providers
+
+```yml
+# Terraform Settings Block (https://www.terraform.io/docs/configuration/terraform.html)
+terraform {
+  # Use a recent version of Terraform
+  required_version = ">= 0.13"
+
+  # Map providers to thier sources, required in Terraform 13+
+  required_providers {
+    # Azure Resource Manager 2.x (Base Azure RM Module)
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 2.0"
+    }
+    # Azure Active Directory 1.x (required for AKS and Azure AD Integration)
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 1.0"
+    }
+    # Random 3.x (Required to generate random names for Log Analytics Workspace)
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+# Configure Terraform remote State Storage
+    backend "azurerm" {
+    resource_group_name   = "terraform-storage-rg"
+    storage_account_name  = "terraformstatexlrwdrzs"
+    container_name        = "prodtfstate"
+    key                   = "terraform.tfstate"
+  }
+}
+
+# Intialize the Azurerm provider
+# This block is required for azurerm 2.x
+provider azurerm {
+  # v2.x azurerm requires "features" block
+  features {}
+}
+```
+
 ## Life cycle
 ![](Pasted%20image%2020220607231049.png)
 
 ### Init
-The Terraform binary contains the basic functionality and everything else is downloaded as and when required. The ‘terraform init’ step analyses the code, figures out the provider and downloads all the plugins (code) needed by the provider (here, it’s AWS). Provider plugins are responsible for interacting over APIs provided by the cloud platforms using the corresponding CLI tools. They are responsible for the life cycle of the resource, i.e., create, read, update and delete. Figure below shows the checking and downloading of the provider ‘aws’ plugins after scanning the configuration file.
+- Initializes the backend
+- Downloads/Updates the plugins
+- Downloads/Updates the providers
+
+The Terraform binary contains the basic functionality and everything else is downloaded as and when required. The `terraform init` step analyses the code, figures out the provider and downloads all the plugins (code) needed by the provider (here, it’s AWS). Provider plugins are responsible for interacting over APIs provided by the cloud platforms using the corresponding CLI tools. They are responsible for the life cycle of the resource, i.e., create, read, update and delete. Figure below shows the checking and downloading of the provider ‘aws’ plugins after scanning the configuration file.
 
 ![](Pasted%20image%2020220618135155.png)
 
@@ -183,7 +243,7 @@ Initializes provider plugins. (upgrades the plugins if available)
 
 ## TF Configuration files
 TF config files will be in HCL (Hashicorp configuration language) format
-will have an tf extension i.e example.tf
+will have an tf extension i.e `example.tf`
 
 helloworld.tf
 ```tf
@@ -199,8 +259,17 @@ Provider "random" {}
 > terraform apply
 ```
 
+## Comments
+The Terraform language supports three different syntaxes for comments:
+
+-   [`#`](https://www.terraform.io/language/syntax/configuration#) begins a single-line comment, ending at the end of the line.
+-   [`//`](https://www.terraform.io/language/syntax/configuration#-1) also begins a single-line comment, as an alternative to `#`.
+-   [`/*`](https://www.terraform.io/language/syntax/configuration#-2) and `*/` are start and end delimiters for a comment that might span over multiple lines.
+
+The `#` single-line comment style is the default comment style and should be used in most cases. Automatic configuration formatting tools (`terraform fmt`) may automatically transform `//` comments into `#` comments.
+
 ## Variables
-• Everything in one file is not great   
+• We can parameterize our deployments using Terraform Input Variables.
 • Use variables to hide secrets   
     • You don't want the AWS credentials in your git repository   
 • Use variables for elements that might change   
@@ -229,6 +298,12 @@ Provider "random" {}
 
 **Note:** Most used variables are String, number, bool, list and map. 
 
+### Different options available to pass input variables
+-   vars.tf or variables.tf 
+	- Define and assign a default value.
+-   arguments during runtime (-var)
+-   arguments during runtime (-var-file terraform.tfvars) with a file containing variables
+
 ### Define a variable
 #### Strings
 vars.tf
@@ -241,7 +316,7 @@ variable "myvar"{
 
 **Access the variables**
 ```sh
-> terraform console # it validates the files in CWD.
+> terraform console # it validates the files in CMD.
 > var.myvar
 > "${var.myvar}" #Introduced in v0.12
 ```
@@ -326,6 +401,11 @@ using the command line flag `terraform apply -var-file=./nics.tfvars`
 Precedence...
 
 ## Output
+-   Output values are like the return values of a Terraform module
+-   Output values are a way to expose some of that information to the user of your module.
+-   A child module can use outputs to expose a subset of its resource attributes to a parent module
+-   A root module can use outputs to print certain values in the CLI output after running terraform apply
+
 ```
 Provider "random" {}
 
@@ -720,3 +800,18 @@ terraform {
 
 
 # Workspaces
+
+# TF Import
+Terraform also supports bringing existing infrastructure under its management. To do so, you can use the `import` command to migrate resources into your Terraform state file. The `import` command does not currently generate the configuration for the imported resource, so you must write the corresponding configuration block to map the imported resource to it.
+
+Bringing existing infrastructure under Terraform's control involves five steps:
+
+1.  Identify the existing infrastructure you will import.
+2.  Import infrastructure into your Terraform state.
+3.  Write Terraform configuration that matches that infrastructure.
+4.  Review the Terraform plan to ensure the configuration matches the expected state and infrastructure.
+5.  Apply the configuration to update your Terraform state.
+
+**Warning:** Importing infrastructure manipulates Terraform state in ways that could leave existing Terraform projects in an invalid state. Make a backup of your `terraform.tfstate` file and `.terraform` directory before using Terraform import on a real Terraform project, and store them securely.
+
+https://learn.hashicorp.com/tutorials/terraform/state-import
