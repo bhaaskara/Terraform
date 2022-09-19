@@ -8,7 +8,7 @@
 # TF commands
 | Usage | Command |
 | :-- | :-- |
-| Initilize the backend/providers | terraform init |
+| Initilize the backend/providers | `terraform init` |
 | | `terraform get` |
 |Compared the desired state (.tf files) with the current state (.tfstate) | `terraform plan` |
 |Refreshes current state in terraform.tfstate file  | `terraform refresh`
