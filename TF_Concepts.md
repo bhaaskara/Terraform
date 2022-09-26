@@ -800,6 +800,7 @@ terraform {
 
 
 # Workspaces
+In Terraform CLI, workspaces are **separate instances of state data that can be used from the same working directory**. You can use workspaces to manage multiple non-overlapping groups of resources with the same configuration. Every initialized working directory has at least one workspace
 
 # TF Import
 Terraform also supports bringing existing infrastructure under its management. To do so, you can use the `import` command to migrate resources into your Terraform state file. The `import` command does not currently generate the configuration for the imported resource, so you must write the corresponding configuration block to map the imported resource to it.
