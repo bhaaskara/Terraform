@@ -9,7 +9,7 @@
 | Usage | Command |
 | :-- | :-- |
 | Initilize the backend/providers | `terraform init` |
-| | `terraform get` |
+| Downloads the modules | `terraform get` |
 |Compared the desired state (.tf files) with the current state (.tfstate) | `terraform plan` |
 |Refreshes current state in terraform.tfstate file  | `terraform refresh`
 |  | `terraform apply -auto-approve` |

@@ -775,6 +775,8 @@ https://github.com/github/gitignore/blob/main/Terraform.gitignore
 ![](Pasted%20image%2020220728132023.png)
 
 ...
+## Dependencies
+https://learn.hashicorp.com/tutorials/terraform/dependencies
 
 # TF Remote state management using Backend
 - With remote state management the statefile will be saved on the backend
