@@ -1,5 +1,6 @@
 # GCP Storage bucket
 ## Create n GCS Buckets
+```sh
 resource "google_storage_bucket" "buckets" {
   for_each                    = toset(var.bucket_name_list)
   name                        = each.key
@@ -50,4 +51,4 @@ resource "google_storage_bucket" "buckets" {
   }
 
 }
-
+```
