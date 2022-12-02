@@ -437,7 +437,9 @@ resorce "aws_instance" "testvm" {
     }
 }
 ```
-
+## Loops
+For_each
+https://blog.gruntwork.io/terraform-tips-tricks-loops-if-statements-and-gotchas-f739bbae55f9
 ## Data
 Data block is useful in fetching data from different resources (tfstate file) or remotely from S3 buckets or dynamically from cloud provider. (i.e AWS or Azure)
 
