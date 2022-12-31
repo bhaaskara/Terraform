@@ -1,3 +1,17 @@
+# Intro / Basics
+## Authentication with GCP
+[Google Provider Configuration Reference | Guides | hashicorp/google | Terraform Registry](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference)
+
+1. Authenticate with GCP
+	`gcloud auth login`
+	Note: Above command opens a browser and login with your GCP credentials.
+2. List the projects accessible by the current user
+	`gcloud projects list`
+3. Set the project
+	`gcloud config set project PROJECT_ID`
+4. List the current project
+	`gcloud config get-value project`
+
 # GCP Storage bucket
 ## Create n GCS Buckets
 ```sh

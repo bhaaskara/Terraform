@@ -5,6 +5,8 @@
 | .tf | all the configuratin files
 |.tfstate | Current state of the Infrastructure
 
+# Installation and Configuration
+
 # TF commands
 | Usage | Command |
 | :-- | :-- |
