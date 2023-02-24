@@ -56,6 +56,7 @@ Terraform relies on plugins called "providers" to interact with cloud providers,
 
 Terraform configurations must declare which providers they require so that Terraform can install and use them. Additionally, some providers require configuration (like endpoint URLs or cloud regions) before they can be used.
 
+ex: AWS, Azure, GCP, K8s
 https://registry.terraform.io
 
 ### What Providers Do
@@ -399,6 +400,30 @@ using the command line flag `terraform apply -var-file=./nics.tfvars`
 ```
 
 Precedence...
+
+### Array varibale
+
+
+Assign the value to array variable in variables.tfvars
+```
+services_list = ["cloudresourcemanager", "storage", "iam"]
+```
+```
+variable "droplet_names" {
+  type    = list(string)
+  default = ["first", "second", "third", "fourth"]
+}
+```
+access it
+```
+resource "digitalocean_droplet" "test_droplet" {
+  count  = length(var.droplet_names)
+  image  = "ubuntu-20-04-x64"
+  name   =  var.droplet_names[count.index]
+  region = "fra1"
+  size   = "s-1vcpu-1gb"
+}
+```
 
 ## Output
 -   Output values are like the return values of a Terraform module
