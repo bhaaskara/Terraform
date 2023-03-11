@@ -515,3 +515,6 @@ https://github.com/bhaaskara/azure-aks-kubernetes-masterclass/tree/master/25-Azu
 -   [Plugin-1: Terraform by Microsoft Devlabs](https://marketplace.visualstudio.com/items?itemName=ms-devlabs.custom-terraform-tasks)
 -   [Plugin-2: Terraform Build & Release Tasks](https://marketplace.visualstudio.com/items?itemName=charleszipp.azure-pipelines-tasks-terraform)
 
+## Remove resources from terraform tfstate file
+[How to remove a resource from Terraform state? | Jhooq](https://jhooq.com/terraform-remove-resource-from-state/#:~:text=To%20remove%20a%20resource%20from%20the%20Terraform%20state%2C%20you%20can,from%20the%20Terraform%20state%20file.)
+
