@@ -78,8 +78,18 @@ Terraform template (code) is written in HCL language and stored as a configurati
 | ~>2.0 | any version in the 2.x range |
 | >=2.0,<=2.3 | any version between 2.0 and 2.3 
 
-### Define Terraform Providers
+### Provider Tiers
+There are 3 primary type of provider tiers in Terraform.
 
+Provider Tier | Description
+--| --
+Official | Owned and maintained by hashicorp
+Partner | Owner and maintained by technology comp, that maintains direct partnership with hashicorp
+Community | Owned and maintained by individual contributors
+
+
+
+### Define Terraform Providers
 ### Multiple providers
 provider.tf
 ```sh
@@ -143,6 +153,29 @@ resource "aws_instance" "web" {
 }
 ```
 
+**Note:** Terraform requires explicit source information for any providers that are not   
+HashiCorp-maintained, using a new syntax in the required_providers nested   
+block inside the terraform configuration block.
+
+```sh
+terraform {
+	required_providers {
+	digitalocean = {
+	source = "digitalocean/digitalocean"
+	}
+	}
+}
+provider "digitalocean" {
+	token = "PUT-YOUR-TOKEN-HERE"
+}
+```
+### TF dependency lock file
+Terraform dependency lock file (.terraform.lock.hcl) allows us to lock to a specific version of the provider.   
+If a particular provider already has a selection recorded in the lock file, Terraform will always   
+re-select that version for installation, even if a newer version has become available.   
+
+You can override that behavior by using `terraform init -upgrade`,
+
 ### Terraform Settings Block
 -   We primarily define the below 3 items in Terraform Settings Block
     -   Terraform Version
@@ -194,6 +227,17 @@ provider azurerm {
   features {}
 }
 ```
+## Resource block
+Resource block describes one or more infrasturucre objects.
+```sh
+resource "aws_instance" "my_ec2" {
+	ami = "ami-082b85234567"
+	instance_type = "t2.micro"
+}
+```
+A resource block declares a resource of a given type ("aws_instance") with a given local name ("myec2").
+Resource type and Name together serve as an identifier for a given resource and so must be unique.
+
 
 ## Life cycle
 ![](Pasted%20image%2020220607231049.png)
@@ -202,6 +246,7 @@ provider azurerm {
 - Initializes the backend
 - Downloads/Updates the plugins
 - Downloads/Updates the providers
+- Providers/plugins are saved to the `.terraform` directory locally
 
 The Terraform binary contains the basic functionality and everything else is downloaded as and when required. The `terraform init` step analyses the code, figures out the provider and downloads all the plugins (code) needed by the provider (here, it’s AWS). Provider plugins are responsible for interacting over APIs provided by the cloud platforms using the corresponding CLI tools. They are responsible for the life cycle of the resource, i.e., create, read, update and delete. Figure below shows the checking and downloading of the provider ‘aws’ plugins after scanning the configuration file.
 
@@ -240,8 +285,23 @@ Initializes provider plugins. (upgrades the plugins if available)
 - Apply - Execute the plan
 - Destroy - Destroy the infrastructure/resources.
 
-## Terraform HCL (HashiCorp configuration language)
+### TF Destroy
+`terraform destroy` allows to destroy all the resource that are created within the folder.
 
+**Destroy only specific resource**
+`terraform destroy -target aws_instance.myec2`
+
+## TF State file
+Terraform stores the state of the infrastructure that is being created from the TF files.   
+This state allows terraform to map real world resource to your existing configuration.
+
+## Desired and Current state
+Terraform's primary function is to create, modify, and destroy infrastructure resources to   
+match the desired state described in a Terraform configuration
+
+Current state is the actual state of a resource that is currently deployed.
+
+## Terraform HCL (HashiCorp configuration language)
 ## TF Configuration files
 TF config files will be in HCL (Hashicorp configuration language) format
 will have an tf extension i.e `example.tf`
@@ -300,10 +360,14 @@ The `#` single-line comment style is the default comment style and should be u
 **Note:** Most used variables are String, number, bool, list and map. 
 
 ### Different options available to pass input variables
+- Environment Variables
+- CLI flags
+	- Individual arguments
+		- arguments during runtime (-var)
+	- From a file
+		- arguments during runtime (-var-file terraform.tfvars) with a file containing variables
 -   vars.tf or variables.tf 
 	- Define and assign a default value.
--   arguments during runtime (-var)
--   arguments during runtime (-var-file terraform.tfvars) with a file containing variables
 
 ### Define a variable
 #### Strings
@@ -320,45 +384,6 @@ variable "myvar"{
 > terraform console # it validates the files in CMD.
 > var.myvar
 > "${var.myvar}" #Introduced in v0.12
-```
-
-#### Map
-```tf
-variable "mymap"{
-    type= map(string)
-    default= {
-      key1 = "value1"
-    }
-}
-```
-
-Access map
-```tf
-> terraform console
-> var.mymap
-> var.mymap["key1"]
-> "${var.mymap["key1"]}" #Introduced in v0.12
-```
-
-#### List
-```tf
-variable "mylist"{
-    type= list
-    default= [1,2,3]
-}
-
-# List of strings
-
-variable "string_list" {"string1","string2"."string3" }
-
-```
-
-Access list
-```tf
-> terraform console
-> var.mylist
-> var.mylist[0]
-> "${var.mylist[0]}" #Introduced in v0.12
 ```
 
 ### vars.tf vs terraform.tfvars
@@ -401,9 +426,64 @@ using the command line flag `terraform apply -var-file=./nics.tfvars`
 
 Precedence...
 
-### Array varibale
+### Variable Data types
+The type argument in a variable block allows you to restrict the type of value that will be accepted as the value for a variable.
+```
+variable " image id" {
+	type = string
+}
+```
 
+If no type constraint is set then a value of any type is accepted.
 
+**Datatypes overview**
+Type keywords | Description
+:-- |:--
+String | Sequence of Unicode characters representing some text, like "hello"
+list | Sequential list of values identified by their position. Starts with 0. </br>["mumbai" ,"singapore", "usa"]
+map | a group of values identified by named labels, like </br>{name = "Mabel",age = 52}.
+number | Example: 200
+
+#### Map
+```tf
+variable "mymap"{
+    type= map(string)
+    default= {
+      key1 = "value1"
+    }
+}
+```
+
+Access map
+```tf
+> terraform console
+> var.mymap
+> var.mymap["key1"]
+> "${var.mymap["key1"]}" #Introduced in v0.12
+```
+
+#### List
+```tf
+variable "mylist"{
+    type= list
+    default= [1,2,3]
+}
+
+# List of strings
+
+variable "string_list" {"string1","string2","string3" }
+
+```
+
+Access list
+```tf
+> terraform console
+> var.mylist
+> var.mylist[0]
+> "${var.mylist[0]}" #Introduced in v0.12
+```
+
+#### Array varibale
 Assign the value to array variable in variables.tfvars
 ```
 services_list = ["cloudresourcemanager", "storage", "iam"]
@@ -452,7 +532,10 @@ To export a value or to reference a value remotely or on a different resource tf
 `terraform output` command will shows the output block values.
 
 ## Count
+The count parameter on resources can simplify configurations and let you scale resources by simply incrementing a number.
+
 ```sh
+# Create 5 EC2 instances
 resorce "aws_instance" "testvm" {
     ami = "ami_id"
     instance_type = "t2.micro"
@@ -462,6 +545,64 @@ resorce "aws_instance" "testvm" {
     }
 }
 ```
+
+**Count Index**
+In resource blocks where count is set, an additional count object is available in expressions, so you can modify the configuration of each instance. 
+This object has one attribute: count.index — The distinct index number (starting with 0) corresponding to this instance.
+
+**Understanding Challenge with Count**
+With the below code, terraform will create 5 instances. But the problem is that all will have the same name.
+
+```
+# Create 5 EC2 instances
+resorce "aws_instance" "testvm" {
+    name = "myinstace"
+    ami = "ami_id"
+    instance_type = "t2.micro"
+    count = 5
+    tags {
+        name = "vm.${count.index}"
+    }
+}
+```
+
+`count.index` allows us to fetch the index of each iteration in the loop.
+
+```sh
+# Create 5 EC2 instances
+resorce "aws_instance" "testvm" {
+    name = "myinstace.${count.index}"
+    ami = "ami_id"
+    instance_type = "t2.micro"
+    count = 5
+    tags {
+        name = "vm.${count.index}"
+    }
+}
+```
+Having a name like myinstance.0, myinstance.1 might not always be suitable.
+Better names like dev-instance, stage-instance, prod-instance is better. 
+count.index can help in such scenario as well.
+
+```sh
+variable "Instance_names" {
+	type = list
+	default = ["dev-insatnce","stge-instance","prod-instance"]
+}
+```
+```sh
+# Create 5 EC2 instances
+resorce "aws_instance" "testvm" {
+    name = var.Instance_names[count.index]
+    ami = "ami_id"
+    instance_type = "t2.micro"
+    count = 5
+    tags {
+        name = "vm.${count.index}"
+    }
+}
+```
+
 ## Loops
 For_each
 https://blog.gruntwork.io/terraform-tips-tricks-loops-if-statements-and-gotchas-f739bbae55f9

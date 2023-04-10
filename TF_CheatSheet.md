@@ -25,6 +25,10 @@
 | List/Show the entire terraform statefile | `terraform show`
 | List providers | `terraform providers`
 
+# List all the output values or attributes for a resource
+- Refer to the attribute section under terraform documentation.
+- In the output block of code mention only `aws_instance.myec2` to list all the attributes available.
+   i.e dont mention any attribute in the output block. `aws-instance.myec2.eip`
 
 # Get Iterative names like, vm-1,vm-2
 ```sh
