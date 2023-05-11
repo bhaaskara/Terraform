@@ -107,7 +107,6 @@ provider "aws" {
     version = "~>2.0"
     alias = "test2"
 }
-
 ```
 resource.tf
 ```sh
@@ -505,6 +504,22 @@ resource "digitalocean_droplet" "test_droplet" {
 }
 ```
 
+#### Set
+- SET is used to store multiple items in a single variable. Like list but
+- SET items are unordered and no duplicates allowed.
+
+**toset Function**
+toset function will convert the list of values to SET.
+```sh
+>toset (["a","b","c","a"])
+toset([
+  "a",
+  "b",
+  "c",
+])
+```
+
+
 ## Output
 -   Output values are like the return values of a Terraform module
 -   Output values are a way to expose some of that information to the user of your module.
@@ -530,6 +545,8 @@ output "source_dest_ckech" {
 To export a value or to reference a value remotely or on a different resource tf file, then first output the value in output block of a tf file, and refer to it in data block in another tf file.
 
 `terraform output` command will shows the output block values.
+
+The output values can also be viewed directly from tfstate file, or run `terraform apply` again, which doesnt do any changes but shows the output values.
 
 ## Count
 The count parameter on resources can simplify configurations and let you scale resources by simply incrementing a number.
@@ -603,9 +620,25 @@ resorce "aws_instance" "testvm" {
 }
 ```
 
+**Note** use count, when you are creating similar resources.
+when you need distinct values for resources use for_each.
+
 ## Loops
 For_each
 https://blog.gruntwork.io/terraform-tips-tricks-loops-if-statements-and-gotchas-f739bbae55f9
+
+for_each makes use of map/set as an index value of the created resource.
+
+**The each object**
+In blocks where for_each is set, an additional each object is available. This object has two attributes:
+
+Each object | Description
+:-- | :--
+each.key |The map key (or set member) corresponding to this instance.
+each.value |The map value corresponding to this instance
+
+
+
 ## Data
 Data block is useful in fetching data from different resources (tfstate file) or remotely from S3 buckets or dynamically from cloud provider. (i.e AWS or Azure)
 
@@ -615,8 +648,16 @@ Data block is useful in fetching data from different resources (tfstate file) or
 ![](Pasted%20image%2020220624203804.png)
 Here lambda functions ARN (should be in output block)is refenced by cloudwatch(data block). 
 
-
 ## Locals
+A local value assigns a name to an expression, allowing it to be used multiple times within a module without repeating it.
+Local Values can be used for multiple different use-cases like having a conditional expression.
+
+```sh
+locals {
+	name_prefix = "${var . name != "" ? Var.name : var.default}"
+}
+```
+
 ```sh
 locals {
     common_tags= {
@@ -636,12 +677,22 @@ resource "aws_instance" "myvm2" {
     instance_type = "t2.small"
     tags = local.common_tags
 }
-
 ```
 
+**Important Pointers for Local Values** 
+- Local values can be helpful to avoid repeating the same values or expressions multiple times in a configuration. 
+- If overused they can also make a configuration hard to read by future maintainers by hiding the actual values used. 
+- Use local values only in moderation, in situations where a single value or result is used in many places and that value is likely to be changed in future.
 
 ## Functions
+The Terraform language includes a number of built-in functions that you can use to transform and combine values. 
+The general syntax for function calls is a function name followed by comma-separated arguments in parentheses: 
+function (argument1, argument2) 
+Example: > max(5, 12, 9)
+
 **Note:** user defined functions are not allowed in Terraform.
+Built in Functions: [Functions - Configuration Language | Terraform | HashiCorp Developer](https://developer.hashicorp.com/terraform/language/functions)
+
 
 ### Element
 ```tf
@@ -672,6 +723,8 @@ count = ${length(var.string_list)}
 `depends_on = ["azurerm_resource_group.main"]`
 
 ### zipmap
+The zipmap function constructs a map from a list of keys and a corresponding list of values.
+
 ```sh
 resource "aws_iam_user" "username" {
     count = 4
@@ -698,21 +751,42 @@ output "combined" {
 ### file
 
 ## IF / Conditional statement
+A conditional expression uses the value of a bool expression to select one of two values. 
+Syntax of Conditional expression: `condition ? true_val : false_val` 
+If condition is true then the result is true_val. If condition is false then the result is false_val.
+
+Examples
 `vmsize = ${var.environmet == "production" ? var.machine_type_prod : var.machine_type_dev }`
 
 `count = var.project == "Atos" ? 3 : 1`
 
 ## Data source
+Data sources allow data to be fetched or computed for use elsewhere in Terraform configuration.
+- Defined under the data block. 
+- Reads from a specific data source (aws_ami) and exports results under “app_ami”
+
+.. Get the sample code from zeal vora repo...
 
 ## Formatting
+Formatting increases the readability of the code.
+the `terraform fmt` command rewrite the configuration files to take care of the overall formatting.
 `terraform fmt`
 
 ## Validate the configuration file
+Terraform Validate primarily checks whether a configuration is syntactically valid. It can check various aspects including unsupported arguments, undeclared variables and others.
+
 `terraform validate`
+**NOte**: `terraform plan` command also runs the validate.
 
 ## Load order and semantics
+Terraform generally loads all the configuration files within the directory specified in alphabetical order. 
+The files loaded must end in either `.tf` or `.tf.json` to specify the format that is in use.
 
 ## Dynamic blocks
+**Understanding the challenge**
+In many of the use-cases, there are repeatable nested blocks that needs to be defined. This can lead to a long code and it can be difficult to manage in a longer time.
+
+**Dynamic Block** allows us to dynamically construct repeatable nested blocks which is supported inside resource, data, provider, and provisioner blocks.
 
 vars.tf
 ```sh
@@ -751,6 +825,8 @@ resource "aws_security_group" "dynamicsg" {
 ```
 
 **Iterator**
+The iterator argument (optional) sets the name of a temporary variable that represents the current element of the complex value. If omitted, the name of the variable defaults to the label of the dynamic block.
+
 ```sh
 resource "aws_security_group" "dynamicsg" {
     name = "DynamicSG"
@@ -776,6 +852,12 @@ resource "aws_security_group" "dynamicsg" {
 ```
 
 ## Debugging
+Terraform has detailed logs which can be enabled by setting the TF_LOG environment variable to any value. 
+You can set `TF_LOG` to one of the log levels TRACE, DEBUG, INFO, WARN or ERROR to change the verbosity of the logs.
+
+TRACE is the most verbose and it is the default if TF_LOG is set to something other than a log level name. 
+To persist logged output you can set TF_LOG_PATH in order to force the log to always be appended to a specific file when logging is enabled
+
 `export TF_LOG=TRACE` # TF_LOG can be TRACE, DEBUG, INFO, WARN, or ERROR
 `export TF_LOG_PATH=trace.txt`
 
@@ -785,6 +867,15 @@ Tainted resource will be recreated next time when you run `terraform apply`
 
 - list tainted resources ?
 - how to untaint a resource ?
+
+This command will not modify infrastructure, but does modify the state file in order to mark a resource as tainted. Once a resource is marked as tainted, the next plan will show that the resource will be destroyed and recreated and the next apply will implement this change. 
+Note that tainting a resource for recreation may affect resources that depend on the newly tainted resource.
+
+## Recreating a resource
+Similar kind of functionality was achieved using terraform taint command in older   
+versions of Terraform.   
+For Terraform v0.15.2 and later, HashiCorp recommend using the -replace option with terraform apply.
+`terraform apply -replace "aws_instance.myec2"`
 
 ## Splat expression
 A _splat expression_ provides a more concise way to express a common operation that could otherwise be performed with a `for` expression.
@@ -819,11 +910,14 @@ resource "aws_instance" "demoec2" {
 ## Save terraform plan to a file
 `terraform plan -out=testplan`
 `terraform apply testplan`
-**Note:** plan output file testplan is not human readable.
+
+**Note:** plan output file testplan is not a text file, its binary file.
 
 - how to preview a terraform plan file ?
 
 ## Terraform graph
+The terraform graph command is used to generate a visual representation of either a configuration or execution plan.
+The output of terraform graph is in the DOT format, which can easily be converted to an image.
 ```
 1. Generate a dot file using terraform graph > graphout.dot
 2. use graphviz utility to convert the dot file into graph
@@ -831,7 +925,7 @@ resource "aws_instance" "demoec2" {
 4. open the graph file with browser
 ```
 
-## Terraform version and Provider version
+## Terraform settings (version and Provider version)
 ```sh
 terraform {
     required_version = "< 0.12"
@@ -850,7 +944,39 @@ this can be mentioned in provider.tf or version.tf
 `terraform plan -target=aws_instance.myec2`
 
 ## Provisioners
-### Local provisioners
+Provisioners are used to execute scripts on a local or remote machine as part of resource creation or destruction.
+
+**There are two primary types of provisioners:**
+**Creation-Time Provisioner**
+Creation-time provisioners are only run during creation, not during updating or any other lifecycle. 
+If a creation-time provisioner fails, the resource is marked as tainted.
+
+**Destroy-Time Provisioner**
+Destroy provisioners are run before the resource is destroyed.
+If when = destroy is specified, the provisioner will run when the resource it is defined within is destroyed.
+
+### Destroy-time provisioner
+```sh
+resource "aws_instance" "ec2test" {
+    ami = "ami-id"
+    instance_type = "t2.micro"
+    tags = {
+        name = "Testproject"
+    }
+    provisioner "local-exec" {
+        command = "echo ${self.private_ip} >> pribate_ips.txt"
+        on_failure = continue
+        when = destroy
+    }
+}
+```
+
+### Provisioner examples
+- Local-exec
+- Remote-exec
+
+### Local-exec provisioner
+local-exec provisioners allow us to invoke local executable after resource is created
 ```sh
 resource "aws_instance" "ec2test" {
     ami = "ami-id"
@@ -868,7 +994,8 @@ local provisioner runs only when the resource is created, and it wont run when r
 local resource runs on the machine where TF is installed or run from.
 provisioner creation time failure cause the resource to be tainted and recreated during next time `terraform apply`.
 
-### Remote provisioners
+### Remote-exec provisioners
+Remote-exec provisioners allow to invoke scripts directly on the remote server.
 ```sh
 resource "aws_instance" "ec2test" {
     ami = "ami-id"
@@ -891,24 +1018,12 @@ resource "aws_instance" "ec2test" {
 ```
 - it runs on remote machine
 - it works with ssh and winRM
-
-### Destroy-time provisioner
-```sh
-resource "aws_instance" "ec2test" {
-    ami = "ami-id"
-    instance_type = "t2.micro"
-    tags = {
-        name = "Testproject"
-    }
-    provisioner "local-exec" {
-        command = "echo ${self.private_ip} >> pribate_ips.txt"
-        on_failure = continue
-        when = destroy
-    }
-}
-```
-
-- how to run a provisioner every time ?
+### Provisioner - Failure Behaviour
+By default, provisioners that fail will also cause the terraform apply itself to fail. 
+The `on_failure` setting can be used to change this. 
+The allowed values are
+- Continue: Ignore the error and continue with creation or destruction.
+- fail: Raise an error and stop applying (the default behavior). If this is a creation provisioner, taint the resource.
 
 ## Modules
 **DRY principle - Do not repeat yourself**
