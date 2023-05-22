@@ -1023,14 +1023,35 @@ By default, provisioners that fail will also cause the terraform apply itself to
 The `on_failure` setting can be used to change this. 
 The allowed values are
 - Continue: Ignore the error and continue with creation or destruction.
-- fail: Raise an error and stop applying (the default behavior). If this is a creation provisioner, taint the resource.
+- fail: Raise an error and stop applying (the default behavior). If this is a creation provisioner, resource will be tainted.
 
 ## Modules
 **DRY principle - Do not repeat yourself**
 
 Get the community built modules from registry.terrafor.io
 
-### Module source from Git
+### Module sources
+The source argument in a module block tells Terraform where to find the source code for the desired child module.
+Supported module paths are
+- Local paths
+- Terraform Registry
+- GitHub
+- Bitbucket
+- Generic Git, Mercurial repositories
+- HTTP URLs 
+- S3 buckets
+- GCS buckets
+**Local path**
+a local path must begin with either ./ or ../ to indicate that a local path is intended.
+```sh
+module "consul"{
+  source = "./consul"
+}
+```
+
+**Git Module Source** 
+Arbitrary Git repositories can be used by prefixing the address with the special `git::` prefix. After this prefix, any valid Git URL can be specified to select one of the protocols supported by Git.
+
 ```sh
 module "module_local_name" {
     source = "git::<github SSH/HTTPS path>"
@@ -1039,9 +1060,25 @@ module "module_local_name" {
 Reference a branch or tag
 ```sh
 module "module_local_name" {
-    source = "git::<github SSH/HTTPS path>?ref=<v0.0.11>/<branchname>"
+    source = "git::<github SSH/HTTPS path>?ref=<branchname>"
 }
 ```
+reference a tag
+```sh
+module "module_local_name" {
+    source = "git::<github SSH/HTTPS path>?ref=<v0.0.11>"
+}
+```
+
+## Terraform and Gitignore
+Depending on the environments, it is recommended to avoid committing certain files to GIT.
+Files to Ignore | Description
+:--|:--
+.terraform | This file will be recreated when terraform init is run, and contains the downloaded modules.
+terraform.tfvars | Likely to contain sensitive data
+terraform.tfstate | shoud be stored in remote side
+crash.log | If terraform crashes, the logs are stored to a file named crash.log
+
 ## Workspaces
 ```
 terraform workspace list
@@ -1064,6 +1101,11 @@ https://learn.hashicorp.com/tutorials/terraform/dependencies
 # TF Remote state management using Backend
 - With remote state management the statefile will be saved on the backend
 - Local tfstate file will not be created/saved locally. 
+
+**Note:** the sensitive info like passwords doesnt show up in terraform plan or apply, but are stored and visible in terraform.tfstate file. So its recommended not to save it in git repo.
+
+By default, Terraform implicitly uses a backend called local to store state as a local file on disk.
+
 ## Azure
 ![](Pasted%20image%2020220728120358.png)
 ## AWS
