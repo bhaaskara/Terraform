@@ -776,7 +776,7 @@ the `terraform fmt` command rewrite the configuration files to take care of the 
 Terraform Validate primarily checks whether a configuration is syntactically valid. It can check various aspects including unsupported arguments, undeclared variables and others.
 
 `terraform validate`
-**NOte**: `terraform plan` command also runs the validate.
+**Note**: `terraform plan` command also runs the validate.
 
 ## Load order and semantics
 Terraform generally loads all the configuration files within the directory specified in alphabetical order. 
